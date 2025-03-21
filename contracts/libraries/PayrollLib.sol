@@ -7,16 +7,25 @@ pragma solidity ^0.8.28;
 /// @title PayrollLibrary - A reusable library for payroll calculations and job management
 library PayrollLibrary {
     struct Job {
-        address from;
-        address to;
+        uint256 id;
+        address employer;
+        bytes jobDescription;
+        address freelancer;
         address token;
         uint256 depositAmount;
         uint256 amountPerMileStone;
         uint256 numOfMileStone;
+        uint256 currentMileStone;
+        uint256 amountReleased;
         // case should we do it by mile stone or by timeframe
         uint256 remainingBalance;
         uint256 lastUpdate;
+
     }
+
+    
+
+
     
     /// @notice Calculates the amount owed to a freelancer based on milestones completed
     /// @param job Job struct

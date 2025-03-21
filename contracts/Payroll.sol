@@ -7,11 +7,15 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "./libraries/PayrollLib.sol";
+import "./libraries/Freelancer.sol"
 
 
-contract Payroll {
+contract Payroll is ReentrancyGuard {
     mapping(uint256 => PayrollLibrary.Job) public jobs;
+    mapping(uint256 => FreelancerLibrary.Freelancer) public freelancers;
+    mapping(address => bool) public isFreeLancerValid;
     uint256 public jobCounter;
+    uint256 public freelancerCounter;
 
 
     error InvalidAddress();
@@ -21,13 +25,24 @@ contract Payroll {
     error JobNotFound();
     error JobDone();
     error Unauthorized();
+    struct Bidder {
+        address freelancer,
+        uint256 amount
+    }
 
-    
-    mapping(uint256 => Job) public jobs;
-    uint256 public jobId;
-    // tracks num of jobs and provides unique ids for each
+    struct Bid {
+        address[] freelancers;
+        mapping(address => uint256) freelancerBids;
+    }
+    mapping(uint256 => Bid) public bids;
 
     // events here ...
+    event FreelancerCreated(uint256, indexed string);
+    event JobPosted(uint256,indexed address, uint256, address);
+    event JobBid(uint256, address, uint256);
+    event JobAssigned(uint256, address)
+    event MileStoneCompleted(uint256, bool, uint256);
+    event PaymentRecieved(uint256, address, uint256);
 
     modifier onlyValidAddress(address _address) {
         if (_address == address(0) || _address == address(this)) {
@@ -35,15 +50,116 @@ contract Payroll {
         }
         _;
     }
-    
-    function postJob(uint256 _salary, address _preferredToken, uint256 _milestoneCount) external {
-        require(_salary > 0, "Salary must be greater than zero");
+
+    modifier onlyValidFreelancer(address _address) {
+        if(!isFreeLancerValid(_address)){
+            revert Unauthorized();
+        }
+        _;
+    }
+
+    modifier onlyValid(bool condition, error err) {
+        if (!condition) {
+            revert err();
+        }
+        _;
+    }
+
+    modifier onlyValidAmount(uint256 amount) {
+        if (amount <= 0) {
+            revert InvalidAmount();
+        }
+        _;
+    }
+
+    function registerFreelancer(address _freelancer, string memory _name, bytes memory _description, bytes calldata _stacks) onlyValidAddress(_freelancer)  external {
+        require(msg.sender == _freelancer, "cant register another");
+
+        freelancerCounter++;
+        freelancers[freelancerCounter] = FreelancerLibrary.Freelancer(freelancerCounter, _freelancer,  _name, _description, 0, 0,_stacks, [] );
+        isFreeLancerValid[_freelancer] = true;
+        emit FreelancerCreated(freelancerCounter, _name);
+
+    }
+
+    function postJob(uint256 _amount, address _preferredToken, uint256 _milestoneCount, bytes _jobDescription) external {
+        require(_amount > 0, "Salary must be greater than zero");
         require(_milestoneCount > 0, "Must have at least one milestone");
         
         jobCounter++;
-        jobs[jobCounter] = PayrollLibrary.Job(msg.sender, address(0),_preferredToken,  _salary, _salary/_milestoneCount, _milestoneCount, _salary,  block.timestamp);
-        emit JobPosted(jobCounter, msg.sender, _salary, _preferredToken);
+        jobs[jobCounter] = PayrollLibrary.Job(jobCounter, msg.sender, _jobDescription, address(0),_preferredToken,  _amount, _amount/_milestoneCount, _milestoneCount, 1 , 0 _amount,  block.timestamp);
+        emit JobPosted(jobCounter, msg.sender, _amount, _preferredToken);
     }
 
-    
+    function bidJob(uint256 _jobId, uint256 _bidAmount) 
+        external 
+        onlyValid(jobCounter > _jobId, JobNotFound)
+        onlyValidAmount(_bidAmount)
+        onlyValidFreelancer(msg.sender)
+            {
+        Bid jobBid = bids[_j];
+        uint256 nextBidID = jobBid.freelancers.length;
+        jobBid.freelancers[nextBidID] = msg.sender;
+        jobBid.freelancerBids[msg.sender] = _bidAmount;
+        emit JobBid(_jobId, msg.sender, _bidAmount);
+    }
+
+    function assignJob(uint256 _jobId,address _freelancer)
+        onlyValid(jobCounter > _jobId, JobNotFound)
+        onlyValidFreelancer(_freelancer)
+        external 
+        {
+            PayrollLibrary.Job job = jobs[_jobId];
+            require(job.freelancer != address(0), "Job Already assigned");
+            job.freelancer = _freelancer;
+            job.lastUpdate = block.timestamp
+            emit JobAssigned(_jobId, _freelancer)
+        }
+
+    function tickMileStoneAsCompleted(uint256 _jobId, bool isEmployer, uint256 milestone) 
+        external 
+        onlyValid(jobCounter > _jobId, JobNotFound)
+        {
+            PayrollLibrary.Job job = jobs[_jobId];
+            require(job.freelancer == address(0), "Job is not assigned");
+            require(job.currentMileStone == milestone, "Last milestone not completed");
+            require(job.numOfMileStone <= milestone, "Invalid MileStone")
+            job.currentMileStone ++;
+            job.amountReleased += job.amountPerMileStone;
+            job.lastUpdate = block.timestamp
+            emit MileStoneCompleted(_jobId, isEmployer, milestone);
+            
+        }
+
+    function receivePayment(uint256 _jobId) 
+        external
+        onlyValidFreelancer(msg.sender)
+        {
+            PayrollLibrary.Job job = jobs[_jobId];
+            uint256 amount = job.amountReleased; 
+            job.remainingBalance -= amount;
+            job.lastUpdate = block.timestamp
+            IERC20(job.token).transfer(msg.sender, amount);
+            emit PaymentRecieved(_jobId, msg.sender, amount);
+        }
+
+    // function terminateJob();
+    // function chooseRandomFreelancer();
+
+    //views
+
+    function getBidders(uint256 _jobId) external view returns (Bidder[] bidders){
+        Bid jobBid = bids[_j];
+        Bidder[] bidders = [];
+        for (let i = 0, i < jobBid.freelancers.length, i++){
+            bidders[i] = Bidder(jobBid.freelancers[i], jobBid.freelancerBids[jobBid.freelancers[i]]);
+        }
+
+    }
+
+    // function getJobs(uint256 limit)
+    // function getFreelancers(uint256 limit)
+    // function getJobData()
+    // function getFreelancerDetail()
+
 }
