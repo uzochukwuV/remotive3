@@ -959,6 +959,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts@npm:^5.2.0":
+  version: 5.2.0
+  resolution: "@openzeppelin/contracts@npm:5.2.0"
+  checksum: 10c0/6e2d8c6daaeb8e111d49a82c30997a6c5d4e512338b55500db7fd4340f29c1cbf35f9dcfa0dbc672e417bc84e99f5441a105cb585cd4680ad70cbcf9a24094fc
+  languageName: node
+  linkType: hard
+
 "@pkgjs/parseargs@npm:^0.11.0":
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
@@ -4274,6 +4281,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"openzeppelin-contracts@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "openzeppelin-contracts@npm:4.0.0"
+  checksum: 10c0/501375cc84005d27a55ae11d3a2730de7fdf2116fc295b62847f6b0145f630208099911532dd86e681457fa2f71261c8f8af9ef5b0f8c39f050cd924dd12b54a
+  languageName: node
+  linkType: hard
+
 "optionator@npm:^0.8.1":
   version: 0.8.3
   resolution: "optionator@npm:0.8.3"
@@ -4413,6 +4427,7 @@ __metadata:
     "@nomicfoundation/hardhat-network-helpers": "npm:^1.0.0"
     "@nomicfoundation/hardhat-toolbox": "npm:^5.0.0"
     "@nomicfoundation/hardhat-verify": "npm:^2.0.0"
+    "@openzeppelin/contracts": "npm:^5.2.0"
     "@typechain/ethers-v6": "npm:^0.5.0"
     "@typechain/hardhat": "npm:^9.0.0"
     "@types/chai": "npm:^4.2.0"
@@ -4422,6 +4437,7 @@ __metadata:
     ethers: "npm:^6.4.0"
     hardhat: "npm:^2.22.19"
     hardhat-gas-reporter: "npm:^1.0.8"
+    openzeppelin-contracts: "npm:^4.0.0"
     solidity-coverage: "npm:^0.8.0"
     ts-node: "npm:>=8.0.0"
     typechain: "npm:^8.3.0"

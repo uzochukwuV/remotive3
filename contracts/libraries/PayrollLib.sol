@@ -31,15 +31,15 @@ library PayrollLibrary {
     /// @param job Job struct
     /// @return amountOwed The amount owed to the freelancer
     function calculateOwed(Job storage job) internal view returns (uint256) {
-        require(job.active, "Job is not active");
-        require(job.milestonesCompleted > 0, "No milestones completed");
-        return (job.salary * job.milestonesCompleted) / job.milestoneCount;
+        // require(job.active, "Job is not active");
+        require(job.currentMileStone > 1, "No milestones completed");
+        return (job.depositAmount * job.currentMileStone) / job.numOfMileStone;
     }
     
     /// @notice Updates job last paid timestamp and milestone completion
     /// @param job Job struct
     function updateLastPaid(Job storage job) internal {
-        job.lastPaid = block.timestamp;
-        job.milestonesCompleted++;
+        job.lastUpdate = block.timestamp;
+        job.currentMileStone++;
     }
 }
